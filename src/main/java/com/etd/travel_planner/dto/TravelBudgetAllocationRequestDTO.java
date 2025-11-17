@@ -1,0 +1,22 @@
+package com.etd.travel_planner.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class TravelBudgetAllocationRequestDTO {
+
+    private Long travelRequestId;
+
+    private String approvedModeOfTravel;
+
+    private String approvedHotelStarRating;
+
+}

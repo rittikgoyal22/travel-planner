@@ -29,4 +29,5 @@ public class LocationServiceImpl implements LocationService {
         List<Location> locations = locationRepo.findAll();
         return locationMapper.mapLocationToLocationResponseDTO(locations);
     }
+
 }
