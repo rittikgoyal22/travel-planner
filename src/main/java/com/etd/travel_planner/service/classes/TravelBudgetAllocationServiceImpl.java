@@ -92,7 +92,7 @@ public class TravelBudgetAllocationServiceImpl implements TravelBudgetAllocation
         }
 
         long diffInMillis = travelRequest.getToDate().getTime() - travelRequest.getFromDate().getTime();
-        long diffInDays = Math.abs(diffInMillis / (24 * 60 * 60 * 1000)) + 1;
+        long diffInDays = Math.abs(diffInMillis / (24 * 60 * 60 * 1000));
 
         Long maxBudgetPerDay = maxBudgetPerDayByGrade(employeeDetail.get(GRADE).asText());
         Long totalBudget = maxBudgetPerDay * diffInDays;

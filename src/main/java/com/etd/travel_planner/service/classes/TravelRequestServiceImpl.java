@@ -69,7 +69,7 @@ public class TravelRequestServiceImpl implements TravelRequestService {
         }
 
         long diffInMillis = travelRequestDTO.getToDate().getTime() - travelRequestDTO.getFromDate().getTime();
-        long diffInDays = Math.abs(diffInMillis / (24 * 60 * 60 * 1000)) + 1;
+        long diffInDays = Math.abs(diffInMillis / (24 * 60 * 60 * 1000));
 
         String priority = travelRequestDTO.getPriority();
         validatePriority(diffInDays, priority);
