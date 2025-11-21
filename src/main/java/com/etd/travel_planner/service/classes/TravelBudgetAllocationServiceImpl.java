@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Locale;
@@ -29,10 +30,10 @@ import static com.etd.travel_planner.constant.AppConstant.BUS;
 import static com.etd.travel_planner.constant.AppConstant.EMPLOYEE_GRADE;
 import static com.etd.travel_planner.constant.AppConstant.EMPLOYEE_GRADE_INVALID;
 import static com.etd.travel_planner.constant.AppConstant.EMPLOYEE_ROLE_NOT_ALLOWED_HOTEL;
-import static com.etd.travel_planner.constant.AppConstant.GRADE;
 import static com.etd.travel_planner.constant.AppConstant.GRADE_1;
 import static com.etd.travel_planner.constant.AppConstant.GRADE_2;
 import static com.etd.travel_planner.constant.AppConstant.GRADE_3;
+import static com.etd.travel_planner.constant.AppConstant.GRADE_NAME;
 import static com.etd.travel_planner.constant.AppConstant.HR;
 import static com.etd.travel_planner.constant.AppConstant.ROLE;
 import static com.etd.travel_planner.constant.AppConstant.STAR_3;
@@ -40,6 +41,7 @@ import static com.etd.travel_planner.constant.AppConstant.STAR_5;
 import static com.etd.travel_planner.constant.AppConstant.STAR_7;
 import static com.etd.travel_planner.constant.AppConstant.TRAIN;
 import static com.etd.travel_planner.constant.AppConstant.TRAVEL_MODE_INVALID;
+import static com.etd.travel_planner.constant.AppConstant.TRAVEL_REQUEST_BUDGET_PROCESSED;
 import static com.etd.travel_planner.constant.AppConstant.TRAVEL_REQUEST_ID;
 import static com.etd.travel_planner.constant.AppConstant.TRAVEL_REQUEST_NOT_APPROVED;
 import static com.etd.travel_planner.constant.AppConstant.TRAVEL_REQUEST_NOT_FOUND;
@@ -70,6 +72,12 @@ public class TravelBudgetAllocationServiceImpl implements TravelBudgetAllocation
         TravelRequest travelRequest = travelRequestRepo.findById(travelBudgetAllocationRequestDTO.getTravelRequestId())
                 .orElseThrow(()-> new NotFoundException(messageSource.getMessage(TRAVEL_REQUEST_NOT_FOUND, new Object[]{travelBudgetAllocationRequestDTO.getTravelRequestId()}, Locale.ENGLISH), TRAVEL_REQUEST_ID));
 
+        TravelBudgetAllocation travelBudgetAllocation = travelBudgetAllocationRepo.findByTravelRequestId(travelRequest.getRequestId());
+        if(!ObjectUtils.isEmpty(travelBudgetAllocation))
+        {
+            throw new BadRequestException(messageSource.getMessage(TRAVEL_REQUEST_BUDGET_PROCESSED, null, Locale.ENGLISH), null);
+        }
+
         if(!APPROVED.equals(travelRequest.getRequestStatus()))
         {
             throw new IllegalArgumentException(messageSource.getMessage(TRAVEL_REQUEST_NOT_APPROVED, new Object[]{travelRequest.getRequestId()}, Locale.ENGLISH), TRAVEL_REQUEST_STATUS);
@@ -94,11 +102,11 @@ public class TravelBudgetAllocationServiceImpl implements TravelBudgetAllocation
         long diffInMillis = travelRequest.getToDate().getTime() - travelRequest.getFromDate().getTime();
         long diffInDays = Math.abs(diffInMillis / (24 * 60 * 60 * 1000));
 
-        Long maxBudgetPerDay = maxBudgetPerDayByGrade(employeeDetail.get(GRADE).asText());
+        Long maxBudgetPerDay = maxBudgetPerDayByGrade(employeeDetail.get(GRADE_NAME).asText());
         Long totalBudget = maxBudgetPerDay * diffInDays;
 
-        TravelBudgetAllocation travelBudgetAllocation = travelBudgetAllocationMapper.mapTravelBudgetAllocationByTravelBudgetAllocationRequestDTO(travelBudgetAllocationRequestDTO, totalBudget, travelRequest);
-        travelBudgetAllocationRepo.save(travelBudgetAllocation);
+        TravelBudgetAllocation savedTravelBudgetAllocation = travelBudgetAllocationMapper.mapTravelBudgetAllocationByTravelBudgetAllocationRequestDTO(travelBudgetAllocationRequestDTO, totalBudget, travelRequest);
+        travelBudgetAllocationRepo.save(savedTravelBudgetAllocation);
         return totalBudget;
     }
 

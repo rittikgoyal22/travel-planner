@@ -18,6 +18,7 @@ public class AppConstant {
     public static final String LOCATION_ID_INVALID = "location.id.invalid";
     public static final String TRAVEL_REQUEST_ALREADY_PROCESSED = "travel.request.already.processed";
     public static final String TRAVEL_REQUEST_STATUS_INVALID = "travel.request.status.invalid";
+    public static final String TRAVEL_REQUEST_BUDGET_PROCESSED = "travel.request.budget.processed";
 
     //General Constants
     public static final String APPROVED = "APPROVED";
@@ -31,7 +32,7 @@ public class AppConstant {
     public static final String TRAIN = "TRAIN";
     public static final String BUS = "BUS";
     public static final String APPROVED_MODE_OF_TRAVEL = "Approved Mode Of Travel";
-    public static final String GRADE = "grade";
+    public static final String GRADE_NAME = "gradeName";
     public static final String EMPLOYEE_GRADE = "Employee Grade";
     public static final String HR = "HR";
     public static final String STAR_3 = "3-STAR";
