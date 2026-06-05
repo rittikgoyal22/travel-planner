@@ -1,5 +1,6 @@
 package com.etd.travel_planner.service.classes;
 
+import com.etd.travel_planner.client.AccountManagementClient;
 import com.etd.travel_planner.dao.LocationRepo;
 import com.etd.travel_planner.dao.TravelBudgetAllocationRepo;
 import com.etd.travel_planner.dao.TravelRequestRepo;
@@ -15,10 +16,14 @@ import com.etd.travel_planner.exception.InvalidDateRangeException;
 import com.etd.travel_planner.exception.NotFoundException;
 import com.etd.travel_planner.mapper.TravelRequestMapper;
 import com.etd.travel_planner.service.interfaces.TravelRequestService;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import feign.FeignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Date;
 import java.util.List;
@@ -26,6 +31,10 @@ import java.util.Locale;
 
 import static com.etd.travel_planner.constant.AppConstant.APPROVED;
 import static com.etd.travel_planner.constant.AppConstant.DATE_RANGE_INVALID;
+import static com.etd.travel_planner.constant.AppConstant.EMAIL_ADDRESS;
+import static com.etd.travel_planner.constant.AppConstant.EMPLOYEE_NOT_FOUND;
+import static com.etd.travel_planner.constant.AppConstant.EMPLOYEE_ROLE_MISMATCH;
+import static com.etd.travel_planner.constant.AppConstant.HR;
 import static com.etd.travel_planner.constant.AppConstant.LOCATION_ID;
 import static com.etd.travel_planner.constant.AppConstant.LOCATION_ID_INVALID;
 import static com.etd.travel_planner.constant.AppConstant.NEW;
@@ -33,7 +42,12 @@ import static com.etd.travel_planner.constant.AppConstant.PRIORITY;
 import static com.etd.travel_planner.constant.AppConstant.PRIORITY_ONE;
 import static com.etd.travel_planner.constant.AppConstant.PRIORITY_THREE;
 import static com.etd.travel_planner.constant.AppConstant.PRIORITY_TWO;
+import static com.etd.travel_planner.constant.AppConstant.RAISED_BY_EMPLOYEE_ID;
+import static com.etd.travel_planner.constant.AppConstant.RAISED_BY_MISMATCH;
 import static com.etd.travel_planner.constant.AppConstant.REJECTED;
+import static com.etd.travel_planner.constant.AppConstant.ROLE;
+import static com.etd.travel_planner.constant.AppConstant.ROLE_EMPLOYEE;
+import static com.etd.travel_planner.constant.AppConstant.TO_BE_APPROVED_BY_HR_ID;
 import static com.etd.travel_planner.constant.AppConstant.TRAVEL_DURATION_EXCEEDED;
 import static com.etd.travel_planner.constant.AppConstant.TRAVEL_PRIORITY_INVALID;
 import static com.etd.travel_planner.constant.AppConstant.TRAVEL_REQUEST_ALREADY_PROCESSED;
@@ -50,22 +64,69 @@ public class TravelRequestServiceImpl implements TravelRequestService {
     private final LocationRepo locationRepo;
     private final TravelRequestMapper travelRequestMapper;
     private final TravelBudgetAllocationRepo travelBudgetAllocationRepo;
+    private final AccountManagementClient accountManagementClient;
     private final MessageSource messageSource;
 
-    public TravelRequestServiceImpl(TravelRequestRepo travelRequestRepo, LocationRepo locationRepo, TravelRequestMapper travelRequestMapper, TravelBudgetAllocationRepo travelBudgetAllocationRepo, MessageSource messageSource) {
+    public TravelRequestServiceImpl(TravelRequestRepo travelRequestRepo, LocationRepo locationRepo,
+                                    TravelRequestMapper travelRequestMapper,
+                                    TravelBudgetAllocationRepo travelBudgetAllocationRepo,
+                                    AccountManagementClient accountManagementClient,
+                                    MessageSource messageSource) {
         this.travelRequestRepo = travelRequestRepo;
         this.locationRepo = locationRepo;
         this.travelRequestMapper = travelRequestMapper;
         this.travelBudgetAllocationRepo = travelBudgetAllocationRepo;
+        this.accountManagementClient = accountManagementClient;
         this.messageSource = messageSource;
     }
 
     @Override
+    @Transactional
     public TravelResponseDTO createTravelRequest(TravelRequestDTO travelRequestDTO) {
         logger.info("Inside TravelRequestServiceImpl :: Creating travel request: {}", travelRequestDTO);
 
+        // ── Validate raisedByEmployeeId ──────────────────────────────────────
+        ObjectNode raisedByEmployee = fetchEmployeeById(travelRequestDTO.getRaisedByEmployeeId(), RAISED_BY_EMPLOYEE_ID);
+
+        // Must match the currently logged-in user
+        String loggedInEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        String raisedByEmail = raisedByEmployee.get(EMAIL_ADDRESS).asText();
+        if (!loggedInEmail.equals(raisedByEmail)) {
+            logger.warn("Inside TravelRequestServiceImpl :: raisedByEmployeeId {} does not match logged-in user {}",
+                    travelRequestDTO.getRaisedByEmployeeId(), loggedInEmail);
+            throw new BadRequestException(
+                    messageSource.getMessage(RAISED_BY_MISMATCH,
+                            new Object[]{travelRequestDTO.getRaisedByEmployeeId()}, Locale.ENGLISH),
+                    RAISED_BY_EMPLOYEE_ID);
+        }
+
+        // Must have Employee role
+        String raisedByRole = raisedByEmployee.get(ROLE).asText();
+        if (!ROLE_EMPLOYEE.equals(raisedByRole)) {
+            logger.warn("Inside TravelRequestServiceImpl :: Employee {} does not have Employee role", travelRequestDTO.getRaisedByEmployeeId());
+            throw new BadRequestException(
+                    messageSource.getMessage(EMPLOYEE_ROLE_MISMATCH,
+                            new Object[]{travelRequestDTO.getRaisedByEmployeeId(), ROLE_EMPLOYEE}, Locale.ENGLISH),
+                    RAISED_BY_EMPLOYEE_ID);
+        }
+
+        // ── Validate toBeApprovedByHrId ──────────────────────────────────────
+        ObjectNode hrEmployee = fetchEmployeeById(travelRequestDTO.getToBeApprovedByHrId(), TO_BE_APPROVED_BY_HR_ID);
+
+        // Must have HR role
+        String hrRole = hrEmployee.get(ROLE).asText();
+        if (!HR.equals(hrRole)) {
+            logger.warn("Inside TravelRequestServiceImpl :: Employee {} does not have HR role", travelRequestDTO.getToBeApprovedByHrId());
+            throw new BadRequestException(
+                    messageSource.getMessage(EMPLOYEE_ROLE_MISMATCH,
+                            new Object[]{travelRequestDTO.getToBeApprovedByHrId(), HR}, Locale.ENGLISH),
+                    TO_BE_APPROVED_BY_HR_ID);
+        }
+
+        // ── Date and priority validation ─────────────────────────────────────
         if(travelRequestDTO.getFromDate().compareTo(travelRequestDTO.getToDate())>0){
-            throw new InvalidDateRangeException(messageSource.getMessage(DATE_RANGE_INVALID, null, Locale.ENGLISH));
+            throw new InvalidDateRangeException(messageSource.getMessage(DATE_RANGE_INVALID,
+                    new Object[]{travelRequestDTO.getFromDate(), travelRequestDTO.getToDate()}, Locale.ENGLISH));
         }
 
         long diffInMillis = travelRequestDTO.getToDate().getTime() - travelRequestDTO.getFromDate().getTime();
@@ -85,22 +146,35 @@ public class TravelRequestServiceImpl implements TravelRequestService {
         return travelRequestMapper.mapTravelRequestToTravelResponseDTO(travelRequest);
     }
 
+    // Fetches employee by ID from account-management via Feign.
+    // Throws NotFoundException if the employee does not exist or account-management is unreachable.
+    private ObjectNode fetchEmployeeById(Long employeeId, String fieldName) {
+        try {
+            return accountManagementClient.getEmployeeById(employeeId);
+        } catch (FeignException e) {
+            logger.warn("Inside TravelRequestServiceImpl :: Employee not found with ID: {}", employeeId);
+            throw new NotFoundException(
+                    messageSource.getMessage(EMPLOYEE_NOT_FOUND, new Object[]{employeeId}, Locale.ENGLISH),
+                    fieldName);
+        }
+    }
+
     public void validatePriority(long travelDurationDays, String priority) {
         switch(priority)
         {
-            case PRIORITY_THREE:
+            case PRIORITY_ONE:
                 if(travelDurationDays > 30){
-                    throw new InvalidDateRangeException(messageSource.getMessage(TRAVEL_DURATION_EXCEEDED,new Object[]{PRIORITY_THREE, 30}, Locale.ENGLISH));
+                    throw new InvalidDateRangeException(messageSource.getMessage(TRAVEL_DURATION_EXCEEDED,new Object[]{PRIORITY_ONE, 30}, Locale.ENGLISH));
                 }
                 break;
             case PRIORITY_TWO:
-                if(travelDurationDays>20){
+                if(travelDurationDays > 20){
                     throw new InvalidDateRangeException(messageSource.getMessage(TRAVEL_DURATION_EXCEEDED,new Object[]{PRIORITY_TWO, 20}, Locale.ENGLISH));
                 }
                 break;
-            case PRIORITY_ONE:
-                if(travelDurationDays>10){
-                    throw new InvalidDateRangeException(messageSource.getMessage(TRAVEL_DURATION_EXCEEDED,new Object[]{PRIORITY_ONE, 10}, Locale.ENGLISH));
+            case PRIORITY_THREE:
+                if(travelDurationDays > 10){
+                    throw new InvalidDateRangeException(messageSource.getMessage(TRAVEL_DURATION_EXCEEDED,new Object[]{PRIORITY_THREE, 10}, Locale.ENGLISH));
                 }
                 break;
             default:
@@ -131,6 +205,7 @@ public class TravelRequestServiceImpl implements TravelRequestService {
     }
 
     @Override
+    @Transactional
     public TravelResponseDTO updateTravelRequest(Long trid, UpdateTravelRequestDTO updateTravelRequestDTO) {
         logger.info("Inside TravelRequestServiceImpl :: Updating travel request id: {} with status: {}", trid, updateTravelRequestDTO.getRequestStatus());
         TravelRequest travelRequest = travelRequestRepo.findById(trid).orElse(null);
@@ -145,7 +220,9 @@ public class TravelRequestServiceImpl implements TravelRequestService {
             throw new BadRequestException(messageSource.getMessage(TRAVEL_REQUEST_STATUS_INVALID, null, Locale.ENGLISH),TRAVEL_REQUEST_STATUS);
         }
         travelRequest.setRequestStatus(requestStatus);
-        travelRequest.setRequestApprovedOn(new Date(System.currentTimeMillis()));
+        if(APPROVED.equals(requestStatus)){
+            travelRequest.setRequestApprovedOn(new Date(System.currentTimeMillis()));
+        }
         travelRequestRepo.save(travelRequest);
         return travelRequestMapper.mapTravelRequestToTravelResponseDTO(travelRequest);
     }

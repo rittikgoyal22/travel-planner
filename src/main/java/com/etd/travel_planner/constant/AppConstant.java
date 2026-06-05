@@ -7,6 +7,9 @@ public class AppConstant {
     }
 
     //Message Properties Keys
+    public static final String EMPLOYEE_NOT_FOUND       = "employee.not.found";
+    public static final String EMPLOYEE_ROLE_MISMATCH   = "employee.role.mismatch";
+    public static final String RAISED_BY_MISMATCH       = "raised.by.mismatch";
     public static final String TRAVEL_REQUEST_NOT_APPROVED = "travel.request.not.approved";
     public static final String TRAVEL_REQUEST_NOT_FOUND = "travel.request.not.found";
     public static final String EMPLOYEE_ROLE_NOT_ALLOWED_HOTEL = "employee.role.not.allowed.hotel";
@@ -26,7 +29,11 @@ public class AppConstant {
     public static final String NEW = "NEW";
     public static final String TRAVEL_REQUEST_ID = "Travel Request Id";
     public static final String TRAVEL_REQUEST_STATUS = "Travel Request Status";
-    public static final String ROLE = "role";
+    public static final String ROLE            = "role";
+    public static final String EMAIL_ADDRESS   = "emailAddress";
+    public static final String ROLE_EMPLOYEE   = "Employee";
+    public static final String RAISED_BY_EMPLOYEE_ID     = "raisedByEmployeeId";
+    public static final String TO_BE_APPROVED_BY_HR_ID   = "toBeApprovedByHrId";
     public static final String APPROVED_HOTEL_STAR_RATING = "Approved Hotel Star Rating";
     public static final String AIR = "AIR";
     public static final String TRAIN = "TRAIN";
