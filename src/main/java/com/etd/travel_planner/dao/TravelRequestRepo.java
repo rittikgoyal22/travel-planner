@@ -13,4 +13,8 @@ public interface TravelRequestRepo extends JpaRepository<TravelRequest, Long> {
     @Query("SELECT tr FROM TravelRequest tr WHERE tr.toBeApprovedByHrId = :hrId AND tr.requestStatus = 'NEW'")
     List<TravelRequest> findPendingTravelRequestByHrId(Long hrId);
 
+    List<TravelRequest> findByRaisedByEmployeeIdOrderByRequestIdDesc(Long employeeId);
+
+    List<TravelRequest> findByRequestStatusOrderByRequestIdDesc(String requestStatus);
+
 }

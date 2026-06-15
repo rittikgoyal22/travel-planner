@@ -17,4 +17,10 @@ public interface TravelRequestService {
 
     TravelResponseDTO updateTravelRequest(Long trid, UpdateTravelRequestDTO updateTravelRequestDTO);
 
+    List<TravelResponseDTO> getByRaisedByEmployeeId(Long employeeId);
+
+    List<TravelResponseDTO> getMyTravelRequests();
+
+    List<TravelResponseDTO> getApprovedTravelRequests();
+
 }

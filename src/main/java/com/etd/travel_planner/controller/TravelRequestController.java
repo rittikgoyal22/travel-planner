@@ -45,11 +45,32 @@ public class TravelRequestController {
         return ResponseEntity.ok(travelResponses);
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<List<TravelResponseDTO>> getMyTravelRequests() {
+        logger.info("Inside TravelRequestController :: Fetching travel requests for current user");
+        List<TravelResponseDTO> responses = travelRequestService.getMyTravelRequests();
+        return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/approved")
+    public ResponseEntity<List<TravelResponseDTO>> getApprovedTravelRequests() {
+        logger.info("Inside TravelRequestController :: Fetching all approved travel requests");
+        List<TravelResponseDTO> responses = travelRequestService.getApprovedTravelRequests();
+        return ResponseEntity.ok(responses);
+    }
+
     @GetMapping("/{trid}")
     public ResponseEntity<TravelRequestDetailResponseDTO> getTravelRequestDetailByTravelRequestId(@PathVariable("trid") Long trid) {
         logger.info("Inside TravelRequestController :: Fetching travel request detail with id: {}", trid);
         TravelRequestDetailResponseDTO travelRequestDetail = travelRequestService.getTravelRequestDetailByTravelRequestId(trid);
         return ResponseEntity.ok(travelRequestDetail);
+    }
+
+    @GetMapping("/employee/{employeeId}")
+    public ResponseEntity<List<TravelResponseDTO>> getByRaisedByEmployeeId(@PathVariable("employeeId") Long employeeId) {
+        logger.info("Inside TravelRequestController :: Fetching travel requests for employee id: {}", employeeId);
+        List<TravelResponseDTO> responses = travelRequestService.getByRaisedByEmployeeId(employeeId);
+        return ResponseEntity.ok(responses);
     }
 
     @PutMapping("/{trid}/update")

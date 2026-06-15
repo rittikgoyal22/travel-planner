@@ -159,6 +159,29 @@ public class TravelRequestServiceImpl implements TravelRequestService {
         }
     }
 
+    @Override
+    public List<TravelResponseDTO> getByRaisedByEmployeeId(Long employeeId) {
+        logger.info("Inside TravelRequestServiceImpl :: Fetching travel requests for employee id: {}", employeeId);
+        List<TravelRequest> travelRequests = travelRequestRepo.findByRaisedByEmployeeIdOrderByRequestIdDesc(employeeId);
+        return travelRequestMapper.mapTravelRequestListToTravelResponseDTOList(travelRequests);
+    }
+
+    @Override
+    public List<TravelResponseDTO> getMyTravelRequests() {
+        logger.info("Inside TravelRequestServiceImpl :: Fetching travel requests for current user");
+        ObjectNode employee = accountManagementClient.getMyEmployee();
+        Long employeeId = employee.get("employeeId").asLong();
+        List<TravelRequest> travelRequests = travelRequestRepo.findByRaisedByEmployeeIdOrderByRequestIdDesc(employeeId);
+        return travelRequestMapper.mapTravelRequestListToTravelResponseDTOList(travelRequests);
+    }
+
+    @Override
+    public List<TravelResponseDTO> getApprovedTravelRequests() {
+        logger.info("Inside TravelRequestServiceImpl :: Fetching all APPROVED travel requests");
+        List<TravelRequest> travelRequests = travelRequestRepo.findByRequestStatusOrderByRequestIdDesc(APPROVED);
+        return travelRequestMapper.mapTravelRequestListToTravelResponseDTOList(travelRequests);
+    }
+
     public void validatePriority(long travelDurationDays, String priority) {
         switch(priority)
         {
