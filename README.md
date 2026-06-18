@@ -26,7 +26,7 @@ This microservice manages the **travel request lifecycle** — employees raise t
 | Framework | Spring Boot 3.5.7 |
 | Security | Spring Security + JWT validation (JJWT 0.12.6) |
 | ORM | Spring Data JPA / Hibernate |
-| Database | H2 file-mode — own DB at `~/data/travel_planner` |
+| Database | MySQL 8 — own DB `travel_planner` (connector `com.mysql:mysql-connector-j`) |
 | HTTP client | Spring Cloud OpenFeign (calls account-management + auth-service) |
 | Build tool | Gradle |
 | Utilities | Lombok, Springdoc OpenAPI |
@@ -95,21 +95,20 @@ If blacklisted → `403`. Fail-open if auth-service is unreachable.
 
 ## Database
 
-travel-planner has its **own H2 database** — it does not share account-management's database.
+travel-planner has its **own MySQL 8 database** `travel_planner` — it does not share account-management's database.
 
 | Setting | Value |
 |---|---|
-| Console URL | `http://localhost:8082/h2-console` |
-| JDBC URL | `jdbc:h2:file:~/data/travel_planner` |
-| Username | `sa` |
-| Password | *(blank)* |
+| Engine | MySQL 8 (`localhost:3306`) |
+| Database | `travel_planner` |
+| Driver | `com.mysql.cj.jdbc.Driver` |
+| Dialect | `org.hibernate.dialect.MySQLDialect` |
+| Schema | `spring.jpa.hibernate.ddl-auto=update` (Hibernate auto-creates/updates tables) |
+| Username | `root` |
 
 ### Fresh start
 
-```
-~/data/travel_planner.mv.db
-~/data/travel_planner.trace.db
-```
+DROP and re-CREATE the MySQL `travel_planner` database (or TRUNCATE its tables), then restart the service so Hibernate recreates the schema and the locations are re-seeded on startup.
 
 ---
 
@@ -406,7 +405,7 @@ src/main/java/com/etd/travel_planner/
 | Service | Port | Responsibility |
 |---|---|---|
 | auth-service | 8080 | Login, token refresh, logout, blacklist check |
-| account-management | 8081 | Employee / grade CRUD + H2 TCP server |
+| account-management | 8081 | Employee / grade CRUD (owns the shared MySQL `account_management` DB) |
 | **travel-planner** *(this service)* | **8082** | Travel request lifecycle, budget calculation |
 | reservation-management | — | Flight / hotel / cab reservation upload and tracking |
 | reimbursement-management | — | Expense claim submission and processing |

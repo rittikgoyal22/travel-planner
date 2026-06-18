@@ -43,9 +43,7 @@ dependencies {
     //for feign client
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     //for mysql database
-//    runtimeOnly 'com.mysql:mysql-connector-j'
-    //for h2 database
-    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'com.mysql:mysql-connector-j'
     //for testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
