@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TravelBudgetAllocationRepo extends JpaRepository<TravelBudgetAllocation, Long> {
 
-    @Query("SELECT tba FROM TravelBudgetAllocation tba WHERE tba.travelRequest.id = :travelRequestId")
+    @Query("SELECT tba FROM TravelBudgetAllocation tba WHERE tba.travelRequest.requestId = :travelRequestId")
     TravelBudgetAllocation findByTravelRequestId(Long travelRequestId);
 
 }

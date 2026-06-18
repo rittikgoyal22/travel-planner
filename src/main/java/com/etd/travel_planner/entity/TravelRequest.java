@@ -14,9 +14,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 
 import java.util.Date;
 
+@Check(constraints = "to_date >= from_date")
+@Check(constraints = "request_status IN ('NEW', 'APPROVED', 'REJECTED')")
 @Entity
 @Table(name = "travel_requests")
 @Builder

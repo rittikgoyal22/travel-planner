@@ -13,7 +13,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 
+@Check(constraints = "approved_mode_of_travel IN ('AIR', 'TRAIN', 'BUS')")
+@Check(constraints = "approved_hotel_star_rating IN ('3-STAR', '5-STAR', '7-STAR')")
 @Entity
 @Table(name = "travel_budget_allocations")
 @Builder

@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
 import java.util.List;
@@ -66,6 +67,7 @@ public class TravelBudgetAllocationServiceImpl implements TravelBudgetAllocation
     }
 
     @Override
+    @Transactional
     public Long calculateBudget(TravelBudgetAllocationRequestDTO travelBudgetAllocationRequestDTO) {
         logger.info("Inside TravelBudgetAllocationServiceImpl :: Calculating budget for request: {}", travelBudgetAllocationRequestDTO);
 
